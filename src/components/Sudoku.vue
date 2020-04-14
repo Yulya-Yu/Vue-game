@@ -1,5 +1,15 @@
 <template>
 <div class="sudoku">
+    <div>
+        <strong>{{ formattedTime }}</strong>
+        <select v-model="difficulty" @change="generatePuzzle()">
+            <option v-for="(display, level) in levels" 
+            :key="level" 
+            :value="level">
+                {{ display }}
+            </option>
+        </select>
+    </div>
     <div class="grid">
         <div class="row" v-for="(row, rowIndex) in puzzle" :key="rowIndex">
             <div class="cell" 
@@ -39,11 +49,34 @@ export default {
             puzzle: [],
             difficulty: 'easy',
             activeRow: -1,
-            activeCell: -1
+            activeCell: -1,
+            levels: {
+                'easy': 'Easy',
+                'medium': 'Medium',
+                'hard': 'Hard',
+                'very-hard': 'Vary Hard',
+                'insane': 'Insane',
+                'inhuman': 'Inhuman'
+            },
+            seconds: 0,
+            timer: null
         }
     },
     mounted () {
         this.generatePuzzle()
+    },
+    computed: {
+    formattedTime () {
+      let min = Math.floor(this.seconds / 60)
+      let sec = this.seconds % 60
+      if (min < 10) {
+        min = `0${min}`
+      }
+      if (sec < 10) {
+        sec = `0${sec}`
+      }
+      return `${min}:${sec}`
+    }
     },
     methods: {
         generatePuzzle() {
@@ -57,6 +90,11 @@ export default {
                     }
                 })
             })
+            this.seconds = 0
+            clearInterval(this.timer)
+            this.timer = setInterval(() => {
+                this.seconds += 1
+            }, 1000)
         },
         setCellActive(row, col, original) {
             if(original) {
@@ -74,6 +112,15 @@ export default {
             this.puzzle[this.activeRow][this.activeCol].value = value
             this.activeRow = -1
             this.activeCol = -1
+            if(this.gameCompleted()) {
+                const message = [
+                    'Yey',
+                    `Dissiculty: ${ this.levels[this.difficulty]}`,
+                    `Time: $ {this.formattedTime}`
+                ]
+                alert(message.join('\n'))
+                this.generatePuzzle()
+            }
 
         },
         cellInvalid(row, col, value) {
@@ -91,10 +138,27 @@ export default {
                     return true
                 }
             }
-
-            return false
-        }   
-    }
+      const rowStart = Math.floor(row / 3) * 3
+      const colStart = Math.floor(col / 3) * 3
+      for (let r = rowStart; r < rowStart + 3; r += 1) {
+        for (let c = colStart; c < colStart + 3; c += 1) {
+          if (this.puzzle[r][c].value === value && !(r === row && c === col)) {
+            return true
+          }
+        }
+      }
+   },
+   gameCompleted() {
+       for (let r = 0; r < 9; r++) {
+           for (let c = 0; c < 9; c++) {
+               if(this.cellInvalid(r, c, this.puzzle[r][c].value)) {
+                   return false
+               }
+           }
+       }
+       return true
+   }
+  }
 }
 </script>
 
